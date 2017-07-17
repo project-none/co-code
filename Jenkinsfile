@@ -1,7 +1,7 @@
 pipeline {
   agent any
   stages {
-    stage('') {
+    stage('MEOW') {
       steps {
         parallel(
           "1": {
