@@ -1,5 +1,5 @@
 pipeline {
-    agent 'golang'
+    agent { label 'golang' }
     stages {
         stage('Build') {
             steps {
