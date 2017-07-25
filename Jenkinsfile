@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent golang
     stages {
         stage('Build') {
             steps {
