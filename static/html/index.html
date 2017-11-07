@@ -1,0 +1,196 @@
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css"
+      integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+<script src="//code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"
+        integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh"
+        crossorigin="anonymous"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js"
+        integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ"
+        crossorigin="anonymous"></script>
+
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<script src="//unpkg.com/vue"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>
+
+
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"
+        integrity="sha256-/BfiIkHlHoVihZdc6TFuj7MmJ0TWcWsMXkeDFwhi0zw=" crossorigin="anonymous"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<style>
+    .badge-success-inside {
+        color: #28a745;
+    }
+    .form-fill {
+        width: 100%;
+        height: 100%;
+    }
+    .hide-focus:focus,.hide-focus:active {
+        outline: none !important;
+        box-shadow: none;
+    }
+</style>
+
+<nav id="menuArea" class="navbar navbar-light bg-light" style="padding: 4px">
+    <div>
+        <button type="button" :class="[ 'btn', 'btn-sm', 'btn-outline-success', 'hide-focus' ]" @click="Run">
+            <i class="fa fa-play" aria-hidden="true"></i>
+            Run
+            <span v-if="run.count > 0" class="badge badge-light badge-success-inside">{{ run.count }}</span>
+        </button>
+        <button type="button" :class="[ 'btn', 'btn-sm', 'btn-outline-info', 'hide-focus' ]" data-toggle="modal" data-target="#About">
+            <i class="fa fa-question" aria-hidden="true"></i>
+            About
+        </button>
+        <button type="button" :class="[ 'btn', 'btn-sm', 'btn-outline-warning', 'hide-focus' ]" data-toggle="modal"
+                data-target="#Donate">
+            <i class="fa fa-money" aria-hidden="true"></i>
+            Donate
+        </button>
+    </div>
+    <div>
+        <a class="btn btn-sm btn-light hide-focus" role="button" href="//github.com/co-code">
+            Co-Code
+        </a>
+        <a class="btn btn-sm btn-light hide-focus" role="button" href="//github.com/co-code/co-code">
+            <i class="fa fa-github" aria-hidden="true"></i>
+        </a>
+    </div>
+</nav>
+<div class="loader"></div>
+<form id="codeArea" class="form-group" style="padding: 4px">
+    <textarea class="form-control form-fill hide-focus" v-model="raw_code"></textarea>
+</form>
+<script>
+    websocket_uri =
+        (location.protocol === "https:" ? "wws:" : "ws:") + "//" +
+        location.hostname + (location.port ? ':' + location.port : "") +
+        "/ws/";
+    websocket = new WebSocket(websocket_uri);
+
+</script>
+<script>
+
+    var menuArea = new Vue({
+        el: '#menuArea',
+        data: {
+            run: {
+                count: 0,
+                last: {
+                    status: 'warning'
+                }
+            }
+        },
+        methods: {
+            Run: function () {
+                websocket.send(JSON.stringify({message: 'run'}))
+                this.run.count += 1
+            }
+        }
+    });
+
+    var codeArea = new Vue({
+        el: '#codeArea',
+        data: {
+            raw_code: '',
+            hightlited_code: ''
+        },
+        watch: {
+            raw_code: function () {
+                // this.code.hightlited = hljs.highlightBlock(this.$el)
+                // console.log('code');
+                this.send_raw_code()
+            }
+        },
+        methods: {
+            send_raw_code: _.debounce(
+                function () {
+                    // console.log('send');
+                    websocket.send(JSON.stringify({raw_code: this.raw_code}));
+                },
+                500
+            )
+        }
+    });
+</script>
+<script>
+    websocket.onopen = function () {
+        console.log('Connected')
+    };
+
+    websocket.onclose = function () {
+        console.log('Closed')
+    };
+
+    websocket.onmessage = function (event) {
+        // console.log(event);
+        var obj = JSON.parse(event.data);
+        if (obj.hasOwnProperty('raw_code')) {
+            codeArea.raw_code = obj.raw_code;
+        }
+    };
+</script>
+
+
+<div class="modal fade" id="About" tabindex="-1" role="dialog" aria-labelledby="AboutLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-info" id="AboutLabel">About</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h1>What is Lorem Ipsum?</h1>
+                Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the
+                industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and
+                scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap
+                into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the
+                release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing
+                software like Aldus PageMaker including versions of Lorem Ipsum.
+                <hr>
+                <h1>Why do we use it?</h1>
+                It is a long established fact that a reader will be distracted by the readable content of a page when
+                looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution
+                of letters, as opposed to using 'Content here, content here', making it look like readable English. Many
+                desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a
+                search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have
+                evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="Donate" tabindex="-1" role="dialog" aria-labelledby="DonateLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-warning" id="DonateLabel">Donate</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <i class="fa fa-eur" aria-hidden="true"></i>
+                <hr>
+                <i class="fa fa-usd" aria-hidden="true"></i>
+                <hr>
+                <i class="fa fa-jpy" aria-hidden="true"></i>
+                <hr>
+                <i class="fa fa-btc" aria-hidden="true"></i>
+                <hr>
+                <i class="fa fa-rub" aria-hidden="true"></i>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
